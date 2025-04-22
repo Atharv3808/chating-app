@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: #4a69bd;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.sent {
+            background-color: #4a69bd;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.received {
+            background-color: #e9e9e9;
+            color: #333;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            margin-bottom: 5px;
+        }
+
+        .message.sent .message-info {
+            color: #ddd;
+        }
+
+        .message.received .message-info {
+            color: #888;
+        }
+
+        .typing-indicator {
+            padding: 10px;
+            color: #666;
+            font-style: italic;
+            height: 20px;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 15px;
+            background-color: white;
+            border-top: 1px solid #eee;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            margin-right: 10px;
+            font-size: 16px;
+            outline: none;
+            transition: border 0.3s ease;
+        }
+
+        .message-input:focus {
+            border-color: #4a69bd;
+        }
+
+        .send-button {
+            background-color: #4a69bd;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-button:hover {
+            background-color: #3a5aad;
+        }
+
+        .send-button:disabled {
+            background-color: #b5b5b5;
+            cursor: not-allowed;
+        }
+
+        /* Login form */
+        .login-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 20px;
+        }
+
+        .login-form {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-form h2 {
+            margin-bottom: 20px;
+            color: #4a69bd;
+        }
+
+        .login-form input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .login-form button {
+            background-color: #4a69bd;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 12px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+
+        .login-form button:hover {
+            background-color: #3a5aad;
+        }
+
+        /* Online users section */
+        .online-users {
+            background-color: white;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .online-users h3 {
+            margin-bottom: 10px;
+            color: #4a69bd;
+            font-size: 16px;
+        }
+
+        .users-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .user-badge {
+            background-color: #e9f5ff;
+            color: #4a69bd;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .user-dot {
+            height: 8px;
+            width: 8px;
+            background-color: #4CAF50;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-container" id="login-screen">
+        <div class="login-form">
+            <h2>Join the Chat</h2>
+            <input type="text" id="username-input" placeholder="Enter your username" required>
+            <button id="join-btn">Join Chat</button>
+        </div>
+    </div>
+
+    <!-- Chat Application -->
+    <div class="container hidden" id="chat-screen">
+        <div class="header">
+            <h1>Real-Time Chat</h1>
+        </div>
+        <div class="chat-container">
+            <div class="online-users">
+                <h3>Online Users</h3>
+                <div class="users-list" id="users-list">
+                    <!-- Users will be added dynamically -->
+                </div>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <!-- Messages will be added dynamically -->
+            </div>
+            <div class="typing-indicator" id="typing-indicator"></div>
+            <div class="input-area">
+                <input type="text" class="message-input" id="message-input" placeholder="Type a message...">
+                <button class="send-button" id="send-button">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.1/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.1/firebase-database-compat.min.js"></script>
+
+    <script>
+        // Initialize Firebase
+            const firebaseConfig = {
+    apiKey: "AIzaSyAEQEzp_xUWvbPGZV0--i-lPPhXX9KGANM",
+    authDomain: "attendance-38aaf.firebaseapp.com",
+    databaseURL: "https://attendance-38aaf-default-rtdb.firebaseio.com",
+    projectId: "attendance-38aaf",
+    storageBucket: "attendance-38aaf.firebasestorage.app",
+    messagingSenderId: "333452203689",
+    appId: "1:333452203689:web:b10a3fba0c59a089823bb8",
+    measurementId: "G-DQ76DGZX79"
+  };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Elements
+        const loginScreen = document.getElementById('login-screen');
+        const chatScreen = document.getElementById('chat-screen');
+        const usernameInput = document.getElementById('username-input');
+        const joinBtn = document.getElementById('join-btn');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const chatMessages = document.getElementById('chat-messages');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const usersList = document.getElementById('users-list');
+
+        // App state
+        let currentUsername = '';
+        let currentUserKey = '';
+        let typingTimeout = null;
+        
+        // Join chat event
+        joinBtn.addEventListener('click', () => {
+            const username = usernameInput.value.trim();
+            if (username) {
+                currentUsername = username;
+                loginScreen.classList.add('hidden');
+                chatScreen.classList.remove('hidden');
+                
+                // Add user to online users
+                const userRef = database.ref('users').push({
+                    username: currentUsername,
+                    online: true,
+                    lastActive: firebase.database.ServerValue.TIMESTAMP
+                });
+                
+                currentUserKey = userRef.key;
+                
+                // Remove user when they disconnect
+                userRef.onDisconnect().remove();
+                
+                // Add welcome message
+                const welcomeMessageRef = database.ref('messages').push({
+                    text: `${currentUsername} has joined the chat`,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP,
+                    type: 'system'
+                });
+                
+                // Set focus to message input
+                messageInput.focus();
+                
+                // Load messages
+                loadMessages();
+                
+                // Load online users
+                loadOnlineUsers();
+            }
+        });
+
+        // Allow enter key to submit username
+        usernameInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                joinBtn.click();
+            }
+        });
+
+        // Send message event
+        sendButton.addEventListener('click', sendMessage);
+        
+        // Allow enter key to send message
+        messageInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Handle typing indicator
+        messageInput.addEventListener('input', () => {
+            // Update typing status
+            if (currentUserKey) {
+                database.ref('users').child(currentUserKey).update({
+                    typing: messageInput.value.length > 0
+                });
+                
+                // Clear typing status after 2 seconds of inactivity
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    database.ref('users').child(currentUserKey).update({
+                        typing: false
+                    });
+                }, 2000);
+            }
+        });
+
+        // Function to send message
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message && currentUsername) {
+                // Add message to database
+                database.ref('messages').push({
+                    username: currentUsername,
+                    text: message,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP,
+                    userKey: currentUserKey
+                });
+                
+                // Clear input
+                messageInput.value = '';
+                
+                // Update typing status
+                database.ref('users').child(currentUserKey).update({
+                    typing: false
+                });
+                
+                // Clear timeout
+                clearTimeout(typingTimeout);
+                
+                // Set focus back to input
+                messageInput.focus();
+            }
+        }
+
+        // Load messages from Firebase
+        function loadMessages() {
+            const messagesRef = database.ref('messages');
+            
+            // Get the last 50 messages
+            messagesRef.limitToLast(50).on('child_added', (snapshot) => {
+                const message = snapshot.val();
+                displayMessage(message, snapshot.key);
+            });
+            
+            // Listen for deleted messages
+            messagesRef.on('child_removed', (snapshot) => {
+                const messageElement = document.getElementById(`message-${snapshot.key}`);
+                if (messageElement) {
+                    messageElement.remove();
+                }
+            });
+        }
+
+        // Display message in the chat
+        function displayMessage(message, key) {
+            const messageElement = document.createElement('div');
+            messageElement.id = `message-${key}`;
+            
+            // Check if it's a system message
+            if (message.type === 'system') {
+                messageElement.classList.add('message', 'system');
+                messageElement.innerHTML = `
+                    <div class="message-text">${message.text}</div>
+                `;
+            } else {
+                // Determine if message was sent by current user
+                const isSentByMe = message.userKey === currentUserKey;
+                messageElement.classList.add('message', isSentByMe ? 'sent' : 'received');
+                
+                // Format timestamp
+                const date = new Date(message.timestamp);
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                const timeString = `${hours}:${minutes}`;
+                
+                messageElement.innerHTML = `
+                    <div class="message-info">
+                        <span class="message-username">${isSentByMe ? 'You' : message.username}</span>
+                        <span class="message-time">${timeString}</span>
+                    </div>
+                    <div class="message-text">${message.text}</div>
+                `;
+                
+                // Add delete option for own messages
+                if (isSentByMe) {
+                    const deleteButton = document.createElement('span');
+                    deleteButton.className = 'delete-message';
+                    deleteButton.innerHTML = '&times;';
+                    deleteButton.style.position = 'absolute';
+                    deleteButton.style.right = '5px';
+                    deleteButton.style.top = '5px';
+                    deleteButton.style.cursor = 'pointer';
+                    deleteButton.style.color = 'rgba(255,255,255,0.7)';
+                    deleteButton.style.fontSize = '18px';
+                    
+                    deleteButton.addEventListener('click', () => {
+                        database.ref('messages').child(key).remove();
+                    });
+                    
+                    messageElement.appendChild(deleteButton);
+                }
+            }
+            
+            // Add message to chat
+            chatMessages.appendChild(messageElement);
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Load and display online users
+        function loadOnlineUsers() {
+            const usersRef = database.ref('users');
+            
+            // Listen for new users
+            usersRef.on('child_added', (snapshot) => {
+                const user = snapshot.val();
+                displayUser(user, snapshot.key);
+            });
+            
+            // Listen for user changes (typing status)
+            usersRef.on('child_changed', (snapshot) => {
+                const user = snapshot.val();
+                updateUserStatus(user, snapshot.key);
+            });
+            
+            // Listen for users going offline
+            usersRef.on('child_removed', (snapshot) => {
+                removeUser(snapshot.key);
+                
+                // Add left message if it's not the current user
+                if (snapshot.key !== currentUserKey) {
+                    const user = snapshot.val();
+                    database.ref('messages').push({
+                        text: `${user.username} has left the chat`,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP,
+                        type: 'system'
+                    });
+                }
+            });
+        }
+
+        // Display user in the online users list
+        function displayUser(user, key) {
+            const userElement = document.createElement('div');
+            userElement.id = `user-${key}`;
+            userElement.className = 'user-badge';
+            userElement.innerHTML = `
+                <span class="user-dot"></span>
+                <span>${user.username}</span>
+            `;
+            
+            // Add typing indicator if user is typing
+            if (user.typing) {
+                userElement.innerHTML += ' <span class="typing">typing...</span>';
+            }
+            
+            usersList.appendChild(userElement);
+            
+            // Update typing indicator
+            updateTypingIndicator();
+        }
+
+        // Update user status (typing)
+        function updateUserStatus(user, key) {
+            const userElement = document.getElementById(`user-${key}`);
+            
+            if (userElement) {
+                userElement.innerHTML = `
+                    <span class="user-dot"></span>
+                    <span>${user.username}</span>
+                    ${user.typing ? ' <span class="typing">typing...</span>' : ''}
+                `;
+            }
+            
+            // Update typing indicator
+            updateTypingIndicator();
+        }
+
+        // Remove user from online users list
+        function removeUser(key) {
+            const userElement = document.getElementById(`user-${key}`);
+            if (userElement) {
+                userElement.remove();
+            }
+            
+            // Update typing indicator
+            updateTypingIndicator();
+        }
+
+        // Update typing indicator with users who are typing
+        function updateTypingIndicator() {
+            database.ref('users').once('value', (snapshot) => {
+                const users = snapshot.val();
+                const typingUsers = [];
+                
+                if (users) {
+                    Object.keys(users).forEach(key => {
+                        if (key !== currentUserKey && users[key].typing) {
+                            typingUsers.push(users[key].username);
+                        }
+                    });
+                }
+                
+                // Update typing indicator text
+                if (typingUsers.length === 1) {
+                    typingIndicator.textContent = `${typingUsers[0]} is typing...`;
+                } else if (typingUsers.length === 2) {
+                    typingIndicator.textContent = `${typingUsers[0]} and ${typingUsers[1]} are typing...`;
+                } else if (typingUsers.length > 2) {
+                    typingIndicator.textContent = `${typingUsers.length} people are typing...`;
+                } else {
+                    typingIndicator.textContent = '';
+                }
+            });
+        }
+
+        // Keep session alive with heartbeat
+        setInterval(() => {
+            if (currentUserKey) {
+                database.ref('users').child(currentUserKey).update({
+                    lastActive: firebase.database.ServerValue.TIMESTAMP
+                });
+            }
+        }, 30000);
+
+        // Detect clicks outside of the chat to handle focus
+        document.addEventListener('click', (event) => {
+            const isClickInsideChat = chatScreen.contains(event.target);
+            if (!isClickInsideChat && !messageInput.value) {
+                // Update typing status to false when clicking outside
+                if (currentUserKey) {
+                    database.ref('users').child(currentUserKey).update({
+                        typing: false
+                    });
+                }
+            }
+        });
+
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            if (currentUserKey) {
+                // Try to remove user synchronously
+                database.ref('users').child(currentUserKey).remove();
+            }
+        });
+    </script>
+</body>
+</html>
